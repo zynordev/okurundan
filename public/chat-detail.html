@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Sohbet - OKURUNDAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .chat-container {
+            max-width: 800px;
+            margin: 20px auto;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 120px); 
+        }
+        .chat-header {
+            background-color: var(--primary);
+            color: white;
+            padding: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .messages-area {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+        }
+        .message-bubble {
+            max-width: 70%;
+            padding: 10px 15px;
+            border-radius: 18px;
+            margin-bottom: 15px;
+            line-height: 1.4;
+            word-wrap: break-word;
+            position: relative;
+        }
+        .message-bubble.sent {
+            background-color: var(--accent);
+            color: white;
+            margin-left: auto;
+            border-bottom-right-radius: 2px;
+        }
+        .message-bubble.received {
+            background-color: #ffffff;
+            color: #333;
+            margin-right: auto;
+            border: 1px solid #eee;
+            border-bottom-left-radius: 2px;
+        }
+        .message-timestamp {
+            display: block;
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .input-area {
+            padding: 15px;
+            border-top: 1px solid #ddd;
+            display: flex;
+            background-color: #fff;
+        }
+        .input-area input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            margin-right: 10px;
+            font-size: 1rem;
+        }
+        .input-area button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .input-area button:hover {
+            background-color: #004d80;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">OKURUNDAN</div>
+        <div class="nav-links">
+            <a href="messages.html" class="nav-link"><i class="fas fa-chevron-left"></i> Mesajlara Geri Dön</a>
+        </div>
+    </nav>
+
+    <div id="chatDetailContainer">
+        <div class="chat-container">
+            <div class="chat-header">
+                <span id="chatTitle">Yükleniyor...</span>
+            </div>
+            <div class="messages-area" id="messagesArea">
+                <p style="text-align: center; color: #999;"><i class="fas fa-spinner fa-spin"></i> Mesajlar yükleniyor...</p>
+            </div>
+            <form id="messageForm" class="input-area">
+                <input type="text" id="messageInput" placeholder="Anonim mesajınızı yazın..." autocomplete="off" required>
+                <button type="submit" id="sendButton"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // KRİTİK: IP ADRESİNİ AYARLAYIN
+        const SUNUCU_ADRESI = '';
+        
+        // ======================== authFetch FONKSİYONU ========================
+        async function authFetch(url, options = {}) {
+            const userId = localStorage.getItem('userId');
+            
+            if (!userId) {
+                window.location.href = 'index.html'; 
+                throw new Error('Unauthorized'); 
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userId}`, 
+                ...options.headers
+            };
+            
+            const fullUrl = url.startsWith('http') ? url : SUNUCU_ADRESI + url;
+
+            try {
+                const response = await fetch(fullUrl, { ...options, headers });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('userId');
+                    alert('Oturumunuz sona ermiştir. Lütfen tekrar giriş yapın.');
+                    window.location.href = 'index.html'; 
+                    throw new Error('API 401 Unauthorized');
+                }
+                return response;
+
+            } catch (error) {
+                console.error('Network veya Auth hatası:', error);
+                throw error;
+            }
+        }
+        // ======================== BİTİŞ authFetch ========================
+
+        document.addEventListener('DOMContentLoaded', fetchChatDetails);
+
+        let currentTransactionId = null;
+        let lastMessageTimestamp = 0;
+        let pollingInterval;
+
+        function getTransactionIdFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('transactionId');
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            return date.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+        }
+        
+        async function fetchChatDetails(shouldScroll = true) {
+            const transactionId = getTransactionIdFromUrl();
+            currentTransactionId = transactionId;
+
+            if (!transactionId || isNaN(transactionId)) {
+                document.getElementById('messagesArea').innerHTML = `<p class="alert alert-danger" style="text-align: center;">Hata: Geçerli bir işlem ID'si bulunamadı.</p>`;
+                return;
+            }
+
+            try {
+                // KRİTİK DÜZELTME: authFetch kullanıldı
+                const response = await authFetch(`/api/messages/${transactionId}`);
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    renderChat(result.chat, shouldScroll);
+                } else {
+                    document.getElementById('messagesArea').innerHTML = `<p class="alert alert-danger" style="text-align: center;">Hata: ${result.message || 'Sohbet yüklenemedi.'}</p>`;
+                }
+
+            } catch (error) {
+                if (error.message !== 'API 401 Unauthorized' && error.message !== 'Unauthorized') {
+                    console.error('Fetch hatası:', error);
+                    document.getElementById('messagesArea').innerHTML = `<p class="alert alert-danger" style="text-align: center;">Sunucu bağlantı hatası.</p>`;
+                }
+            }
+        }
+        
+        async function checkNewMessages() {
+            if (!currentTransactionId) return;
+            
+            try {
+                // KRİTİK DÜZELTME: authFetch kullanıldı
+                const response = await authFetch(`/api/messages/${currentTransactionId}`);
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    const newMessages = result.chat.messages.filter(msg => msg.timestamp > lastMessageTimestamp);
+                    
+                    if (newMessages.length > 0) {
+                        appendNewMessages(newMessages);
+                    }
+                }
+
+            } catch (error) {
+                console.warn('Polling hatası:', error);
+            }
+        }
+
+        function appendNewMessages(newMessages) {
+            const messagesArea = document.getElementById('messagesArea');
+            let shouldScroll = messagesArea.scrollTop + messagesArea.clientHeight >= messagesArea.scrollHeight - 50;
+
+            newMessages.forEach(msg => {
+                const messageDiv = createMessageBubble(msg);
+                messagesArea.appendChild(messageDiv);
+                lastMessageTimestamp = msg.timestamp;
+            });
+
+            if (shouldScroll) {
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            }
+        }
+
+        function createMessageBubble(msg) {
+             const messageDiv = document.createElement('div');
+             messageDiv.className = `message-bubble ${msg.isSentByMe ? 'sent' : 'received'}`;
+             messageDiv.innerHTML = `
+                 ${msg.text}
+                 <span class="message-timestamp">${formatTime(msg.timestamp)}</span>
+             `;
+             return messageDiv;
+        }
+
+        function renderChat(chat, shouldScroll) {
+            document.getElementById('chatTitle').textContent = chat.chatTitle;
+            const messagesArea = document.getElementById('messagesArea');
+            messagesArea.innerHTML = ''; 
+            
+            chat.messages.forEach(msg => {
+                const messageDiv = createMessageBubble(msg);
+                messagesArea.appendChild(messageDiv);
+                lastMessageTimestamp = msg.timestamp;
+            });
+
+            if (shouldScroll) {
+                messagesArea.scrollTop = messagesArea.scrollHeight;
+            }
+
+            if (!pollingInterval) {
+                 pollingInterval = setInterval(checkNewMessages, 5000);
+            }
+
+            document.getElementById('messageForm').removeEventListener('submit', handleSendMessage);
+            document.getElementById('messageForm').addEventListener('submit', handleSendMessage);
+        }
+
+        async function handleSendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('messageInput');
+            const messageText = input.value.trim();
+            
+            if (!messageText) return;
+
+            const sendButton = document.getElementById('sendButton');
+            sendButton.disabled = true;
+
+            try {
+                // KRİTİK DÜZELTME: authFetch kullanıldı
+                const response = await authFetch('/api/send-message', {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        transactionId: parseInt(currentTransactionId), 
+                        text: messageText 
+                    })
+                });
+                
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    const sentMsg = result.sentMessage;
+                    sentMsg.isSentByMe = true;
+                    
+                    appendNewMessages([sentMsg]);
+                    input.value = '';
+
+                } else {
+                    alert('Mesaj gönderme başarısız: ' + (result.message || 'Bilinmeyen Hata.'));
+                }
+
+            } catch (error) {
+                if (error.message !== 'API 401 Unauthorized' && error.message !== 'Unauthorized') {
+                    console.error('Mesaj gönderme hatası:', error);
+                    alert('Sunucuya bağlanılamadı veya ağ hatası oluştu.');
+                }
+            } finally {
+                sendButton.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>

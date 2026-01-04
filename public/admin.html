@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Yönetici Paneli - OKURUNDAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- GÜVENLİK DUVARI -->
+    <script>
+        (function() {
+            const userId = localStorage.getItem('userId');
+            const userRole = localStorage.getItem('userRole'); 
+            if (!userId || userRole !== 'admin') {
+                window.location.href = 'home.html';
+                throw new Error("Yetkisiz Erişim");
+            }
+        })();
+    </script>
+</head>
+<body>
+    <nav class="navbar" style="border-bottom: 3px solid var(--accent);">
+        <a href="home.html" class="brand">
+            <i class="fas fa-user-shield"></i> OKURUNDAN <span style="font-size: 0.8rem; margin-left: 10px; color: #666;">YÖNETİCİ MODU</span>
+        </a>
+        <div class="nav-menu">
+            <a href="home.html" class="nav-link">Öğrenci Görünümü</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- YENİ: YAPAY ZEKA KARTI -->
+        <div class="card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; margin-bottom: 30px;">
+            <div class="card-body" style="display: flex; gap: 20px; align-items: center;">
+                <div style="font-size: 3rem; opacity: 0.9;">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div>
+                    <h3 style="margin-bottom: 10px; font-size: 1.2rem; color: #e2e8f0;">Yapay Zeka Asistanı Analizi</h3>
+                    <p id="aiSummaryText" style="font-size: 1.1rem; line-height: 1.5; font-weight: 300;">
+                        Veriler analiz ediliyor, lütfen bekleyin...
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-num" id="totalBooks">0</div>
+                <div>Toplam Kitap</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="activeTx">0</div>
+                <div>Aktif İletişim</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-num" id="criticalCount">0</div>
+                <div>Kritik Kitap Açığı</div>
+            </div>
+        </div>
+        
+        <div class="grid-2" style="margin-top: 30px;">
+            <div>
+                <div class="card" style="height: 100%;">
+                    <div class="card-body">
+                        <h3><i class="fas fa-bolt" style="color: var(--accent);"></i> Gelen Kitap İstekleri</h3>
+                        <p style="font-size: 0.8rem; color: #666; margin-bottom: 10px;">Öğrencilerin "Bulamadım" diyerek talep ettiği kitaplar:</p>
+                        
+                        <ul id="requestsList" style="list-style: none; margin-top: 10px; max-height: 400px; overflow-y: auto;">
+                            <li style="text-align: center; color: #999; padding: 20px;">Yükleniyor...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sağ taraf: Sınıf Dağılımı (Statik kalabilir veya geliştirilebilir) -->
+            <div>
+                 <div class="card" style="height: 100%;">
+                    <div class="card-body">
+                        <h3><i class="fas fa-chart-pie" style="color: var(--primary);"></i> Hızlı İpuçları</h3>
+                        <ul style="margin-top: 20px; line-height: 1.8; color: #555;">
+                            <li><i class="fas fa-check" style="color: green; margin-right:8px;"></i> En çok talep sınav dönemlerinde artıyor.</li>
+                            <li><i class="fas fa-check" style="color: green; margin-right:8px;"></i> Roman takasları daha hızlı sonuçlanıyor.</li>
+                            <li><i class="fas fa-exclamation-circle" style="color: orange; margin-right:8px;"></i> Kayıp kitap bildirimlerini kontrol etmelisiniz.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function loadAdminData() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) return;
+
+            try {
+                const response = await fetch('/api/admin/dashboard', {
+                    headers: { 'Authorization': `Bearer ${userId}` }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    // İstatistikleri güncelle
+                    document.getElementById('totalBooks').innerText = result.stats.totalBooks;
+                    document.getElementById('activeTx').innerText = result.stats.activeTransactions;
+                    document.getElementById('criticalCount').innerText = result.stats.requests.length;
+                    
+                    // YAPAY ZEKA ÖZETİNİ YAZDIR
+                    if (result.stats.aiInsight) {
+                        document.getElementById('aiSummaryText').innerText = result.stats.aiInsight;
+                    }
+
+                    // İstek listesini doldur
+                    const listEl = document.getElementById('requestsList');
+                    listEl.innerHTML = '';
+
+                    if (result.stats.requests.length === 0) {
+                        listEl.innerHTML = '<li style="text-align: center; color: #999; padding: 20px;">Henüz talep yok.</li>';
+                    } else {
+                        result.stats.requests.forEach(req => {
+                            const li = document.createElement('li');
+                            li.style.cssText = "padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;";
+                            
+                            const urgencyIcon = req.urgency === 'Yüksek' 
+                                ? '<i class="fas fa-fire" style="color: red;" title="Acil"></i>' 
+                                : '<i class="fas fa-clock" style="color: #bbb;" title="Normal"></i>';
+
+                            li.innerHTML = `
+                                <div>
+                                    <strong style="color: #333;">${req.title}</strong>
+                                    <br>
+                                    <small style="color: #666;">${req.author || 'Yazar yok'} • ${req.category}</small>
+                                </div>
+                                <div>${urgencyIcon}</div>
+                            `;
+                            listEl.appendChild(li);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Veri hatası:", error);
+                document.getElementById('aiSummaryText').innerText = "Sunucu bağlantısında hata oluştu.";
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadAdminData);
+    </script>
+</body>
+</html>

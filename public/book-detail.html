@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitap Detayı - OKURUNDAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">OKURUNDAN</div>
+        <div class="nav-links">
+            <a href="home.html" class="nav-link"><i class="fas fa-search"></i> Geri Dön</a>
+            <button id="logoutBtn" class="nav-link" style="color: #e74c3c; background: none; border: none; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+            </button>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div id="bookDetailContent">
+            <div class="card" style="padding: 30px; text-align: center;">
+                <i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i>
+                <p style="margin-top: 15px;">Kitap detayları yükleniyor...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ======================== BAŞLANGIÇ TEMEL FONKSİYONLAR ========================
+        const SUNUCU_ADRESI = ''; 
+        
+        async function authFetch(url, options = {}) {
+            const userId = localStorage.getItem('userId');
+            
+            if (!userId) {
+                window.location.href = 'index.html'; 
+                throw new Error('Unauthorized'); 
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userId}`, 
+                ...options.headers
+            };
+            
+            const fullUrl = url.startsWith('http') ? url : SUNUCU_ADRESI + url;
+
+            try {
+                const response = await fetch(fullUrl, { ...options, headers });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('userId');
+                    alert('Oturumunuz sona ermiştir. Lütfen tekrar giriş yapın.');
+                    window.location.href = 'index.html'; 
+                    throw new Error('API 401 Unauthorized');
+                }
+                return response;
+
+            } catch (error) {
+                console.error('Network veya Auth hatası:', error);
+                throw error;
+            }
+        }
+        // ======================== BİTİŞ TEMEL FONKSİYONLAR ========================
+
+        document.addEventListener('DOMContentLoaded', initPage);
+
+        let bookData = null;
+
+        async function initPage() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const bookId = urlParams.get('id');
+
+            if (!bookId) {
+                document.getElementById('bookDetailContent').innerHTML = '<div class="card" style="padding: 30px; text-align:center;"><p style="color:red;">Hata: Kitap ID eksik.</p></div>';
+                return;
+            }
+            
+            document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+            fetchBookDetails(bookId);
+        }
+
+        async function fetchBookDetails(bookId) {
+            const detailContainer = document.getElementById('bookDetailContent');
+            detailContainer.innerHTML = '<div class="card" style="padding: 30px; text-align: center;"><i class="fas fa-spinner fa-spin fa-2x" style="color: var(--primary);"></i><p style="margin-top: 15px;">Kitap detayları yükleniyor...</p></div>';
+
+            try {
+                // KRİTİK DÜZELTME: API endpoint düzeltildi (server.js'de /api/book/:id)
+                const response = await authFetch(`/api/book/${bookId}`);
+                
+                const data = await response.json();
+                
+                if (!data.success) {
+                    detailContainer.innerHTML = `<div class="card" style="padding: 30px; text-align:center;"><p style="color:red;">Kitap bulunamadı: ${data.message || 'Bilinmeyen Hata.'}</p></div>`;
+                    return;
+                }
+                
+                bookData = data.book; // KRİTİK: API data.book döndürüyor
+                renderBookDetail(bookData);
+
+            } catch (error) {
+                 if (error.message !== 'API 401 Unauthorized' && error.message !== 'Unauthorized') {
+                    detailContainer.innerHTML = `<div class="card" style="padding: 30px; text-align:center;"><p style="color:red;">Sunucu bağlantı hatası veya veri çekilemedi.</p></div>`;
+                    console.error('Fetch hatası:', error);
+                }
+            }
+        }
+
+        function renderBookDetail(book) {
+            const detailContainer = document.getElementById('bookDetailContent');
+            const currentUserId = parseInt(localStorage.getItem('userId'));
+
+            const isOwner = currentUserId === book.ownerId;
+            const buttonText = isOwner ? 'Bu Kitap Sizin (Talep Edilemez)' : 'Anonim Talep Oluştur';
+            const buttonDisabled = isOwner ? 'disabled' : '';
+            const buttonClass = isOwner ? 'btn-secondary' : 'btn-primary';
+
+            detailContainer.innerHTML = `
+                <div class="card" style="padding: 40px;">
+                    <div style="display: flex; align-items: flex-start; gap: 30px;">
+                        <div style="flex-shrink: 0; text-align: center;">
+                            <i class="fas fa-book fa-5x" style="color: var(--primary);"></i>
+                            <p style="margin-top: 10px; font-size: 0.9rem; color: #666;">ID: ${book.id}</p>
+                        </div>
+                        
+                        <div>
+                            <span class="badge" style="background-color: var(--accent); color: white;">${book.category}</span>
+                            <h1 id="bookTitleDisplay" style="margin-top: 10px; margin-bottom: 5px; color: var(--primary);">${book.title}</h1>
+                            <h3 style="margin: 0; color: #666; font-weight: normal;">Yazar/Yayıncı: ${book.author}</h3>
+                            
+                            <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+                            
+                            <div style="display: flex; gap: 20px; font-size: 1.1rem; margin-bottom: 20px;">
+                                <div><i class="fas fa-hand-holding-heart" style="color: var(--primary);"></i> Sahibi: <span style="font-weight: bold;">Anonim (Sistemde: ${book.ownerName})</span></div>
+                                <div><i class="fas fa-star" style="color: gold;"></i> Durum: <span style="font-weight: bold;">${book.condition}</span></div>
+                            </div>
+
+                            <p style="line-height: 1.6; color: #333;">
+                                Bu kitap, Okurundan platformu aracılığıyla paylaşılmak üzere sisteme eklenmiştir. Talep oluşturarak, kitap sahibi ile tamamen gizli bir mesajlaşma başlatabilirsiniz.
+                            </p>
+                            
+                            <button id="requestBtn" class="btn ${buttonClass}" ${buttonDisabled} onclick="handleRequestBook()">
+                                ${buttonText}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function handleRequestBook() {
+            if (!bookData) return;
+            
+            const bookId = bookData.id;
+            const ownerId = bookData.ownerId;
+            const currentUserId = parseInt(localStorage.getItem('userId'));
+
+            if (currentUserId === ownerId) {
+                return;
+            }
+
+            const bookTitle = bookData.title;
+            const initialMessage = `Merhaba, paylaştığınız "${bookTitle}" kitabını talep etmek istiyorum.`;
+
+            if (!confirm(`"${bookTitle}" adlı kitabı talep ederek anonim bir mesajlaşma başlatmak istediğinize emin misiniz?`)) {
+                return;
+            }
+
+            const requestBtn = document.getElementById('requestBtn');
+            requestBtn.disabled = true;
+            requestBtn.textContent = 'Talep Gönderiliyor...';
+
+            try {
+                const response = await authFetch('/api/request-book', {
+                    method: 'POST',
+                    body: JSON.stringify({ bookId, ownerId, initialMessage })
+                });
+                
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    alert('Talep başarıyla gönderildi ve anonim mesajlaşma başlatıldı!');
+                    window.location.href = 'messages.html'; 
+                } else {
+                    alert('Talep gönderme başarısız: ' + (result.message || 'Bilinmeyen Hata.'));
+                }
+
+            } catch (error) {
+                console.error('API çağrısı hatası:', error);
+                if (error.message !== 'API 401 Unauthorized' && error.message !== 'Unauthorized') {
+                    alert('Sunucuya bağlanılamadı veya ağ hatası oluştu.');
+                }
+            } finally {
+                requestBtn.disabled = false;
+                requestBtn.textContent = 'Anonim Talep Oluştur';
+            }
+        }
+        
+        async function handleLogout() {
+            try {
+                const response = await authFetch('/api/logout', { method: 'POST' });
+
+                if (response.ok) {
+                    localStorage.removeItem('userId'); 
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Çıkış yapılamadı. Tekrar deneyin.');
+                }
+            } catch (error) {
+                console.error('Logout hatası:', error);
+            }
+        }
+    </script>
+</body>
+</html>

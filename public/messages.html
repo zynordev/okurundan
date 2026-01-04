@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mesajlar - OKURUNDAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .message-list {
+            margin-top: 20px;
+            list-style: none;
+            padding: 0;
+        }
+        .list-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            text-decoration: none;
+            color: #333;
+            transition: background-color 0.2s;
+        }
+        .list-item:hover {
+            background-color: #f7f7f7;
+        }
+        .list-item:last-child {
+            border-bottom: none;
+        }
+        .icon-box {
+            background-color: var(--accent);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            margin-right: 15px;
+        }
+        .message-content {
+            flex-grow: 1;
+        }
+        .message-content h4 {
+            margin: 0 0 5px 0;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        .message-content p {
+            margin: 0;
+            font-size: 0.9rem;
+            color: #777;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+        }
+        .message-time {
+            font-size: 0.75rem;
+            color: var(--primary);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">OKURUNDAN</div>
+        <div class="nav-links">
+            <a href="home.html" class="nav-link"><i class="fas fa-search"></i> Keşfet</a>
+            <a href="add-book.html" class="nav-link"><i class="fas fa-plus"></i> Kitap Ekle</a>
+            <a href="messages.html" class="nav-link active"><i class="fas fa-envelope"></i> Mesajlar</a>
+            <button id="logoutBtn" class="nav-link" style="color: #e74c3c; background: none; border: none; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+            </button>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 800px;">
+        <div class="card">
+            <div class="card-body">
+                <h2 style="margin-bottom: 20px; color: var(--primary);">Mesaj Kutunuz</h2>
+                
+                <div id="messagesListContainer" class="message-list">
+                    <p style="text-align: center; color: #999;"><i class="fas fa-spinner fa-spin"></i> Mesajlar yükleniyor...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // KRİTİK: IP ADRESİNİ AYARLAYIN
+        const SUNUCU_ADRESI = '';
+        
+        // ======================== authFetch FONKSİYONU ========================
+        async function authFetch(url, options = {}) {
+            const userId = localStorage.getItem('userId');
+            
+            if (!userId) {
+                window.location.href = 'index.html'; 
+                throw new Error('Unauthorized'); 
+            }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userId}`, 
+                ...options.headers
+            };
+            
+            const fullUrl = url.startsWith('http') ? url : SUNUCU_ADRESI + url;
+
+            try {
+                const response = await fetch(fullUrl, { ...options, headers });
+
+                if (response.status === 401) {
+                    localStorage.removeItem('userId');
+                    alert('Oturumunuz sona ermiştir. Lütfen tekrar giriş yapın.');
+                    window.location.href = 'index.html'; 
+                    throw new Error('API 401 Unauthorized');
+                }
+                return response;
+
+            } catch (error) {
+                console.error('Network veya Auth hatası:', error);
+                throw error;
+            }
+        }
+        // ======================== BİTİŞ authFetch ========================
+
+        document.addEventListener('DOMContentLoaded', fetchMessageThreads);
+        document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+        async function fetchMessageThreads() {
+            const container = document.getElementById('messagesListContainer');
+            try {
+                // KRİTİK DÜZELTME: authFetch kullanıldı
+                const response = await authFetch('/api/messages');
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    renderMessageThreads(result.messages, container);
+                } else {
+                    container.innerHTML = `<p class="alert alert-danger">Mesajlar yüklenirken hata oluştu: ${result.message || 'Bilinmeyen Hata'}</p>`;
+                }
+
+            } catch (error) {
+                if (error.message !== 'API 401 Unauthorized' && error.message !== 'Unauthorized') {
+                    console.error('Fetch hatası:', error);
+                    container.innerHTML = `<p class="alert alert-danger">Sunucu bağlantı hatası.</p>`;
+                }
+            }
+        }
+
+        function formatTimeAgo(timestamp) {
+            const now = Date.now();
+            const seconds = Math.floor((now - timestamp) / 1000);
+            
+            if (seconds < 60) return `${seconds} saniye önce`;
+            if (seconds < 3600) return `${Math.floor(seconds / 60)} dakika önce`;
+            if (seconds < 86400) return `${Math.floor(seconds / 3600)} saat önce`;
+            
+            const date = new Date(timestamp);
+            return date.toLocaleDateString('tr-TR');
+        }
+
+        function renderMessageThreads(threads, container) {
+            if (threads.length === 0) {
+                container.innerHTML = `<p class="alert alert-info">Henüz aktif bir mesaj diziniz bulunmamaktadır.</p>`;
+                return;
+            }
+
+            container.innerHTML = '';
+            
+            threads.forEach(thread => {
+                const listItem = document.createElement('a');
+                listItem.href = `chat-detail.html?transactionId=${thread.transactionId}`;
+                listItem.className = 'list-item';
+                
+                listItem.innerHTML = `
+                    <div class="icon-box">
+                        <i class="fas fa-comment-alt"></i>
+                    </div>
+                    <div class="message-content">
+                        <h4>${thread.bookTitle} (Anonim Sohbet)</h4>
+                        <p>${thread.latestMessageText}</p>
+                    </div>
+                    <div class="message-time">
+                        ${formatTimeAgo(thread.latestMessageTimestamp)}
+                    </div>
+                `;
+                container.appendChild(listItem);
+            });
+        }
+
+        async function handleLogout() {
+            try {
+                // KRİTİK DÜZELTME: authFetch kullanıldı
+                const response = await authFetch('/api/logout', { method: 'POST' });
+
+                if (response.ok) {
+                    localStorage.removeItem('userId'); // KRİTİK: userId temizleniyor
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Çıkış yapılamadı. Tekrar deneyin.');
+                }
+            } catch (error) {
+                console.error('Logout hatası:', error);
+            }
+        }
+    </script>
+</body>
+</html>

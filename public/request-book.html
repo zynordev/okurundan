@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitap Talep Et - OKURUNDAN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    
+    <nav class="navbar">
+        <div class="logo">OKURUNDAN</div>
+        <div class="nav-links">
+            <a href="home.html" class="nav-link"><i class="fas fa-arrow-left"></i> Ana Sayfa</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div style="max-width: 600px; margin: 0 auto;">
+            <div class="card">
+                <div class="card-body" style="padding: 40px;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <i class="fas fa-bullhorn" style="font-size: 3rem; color: var(--accent); margin-bottom: 20px;"></i>
+                        <h2>Aradığın Kitabı Bulamadın mı?</h2>
+                        <p style="color: #666;">Bize bildir, senin için temin etmeye çalışalım veya elinde olan bir arkadaşın paylaşsın.</p>
+                    </div>
+
+                    <form id="requestForm">
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Kitap Adı <span style="color:red">*</span></label>
+                            <input type="text" id="bookTitle" class="form-control" placeholder="Örn: Sefiller, TYT Matematik..." required>
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Yazar (Biliyorsan)</label>
+                            <input type="text" id="bookAuthor" class="form-control" placeholder="Örn: Victor Hugo">
+                        </div>
+
+                        <div style="margin-bottom: 20px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Kategori / Ders <span style="color:red">*</span></label>
+                            <select id="bookCategory" class="form-control" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="Roman">Roman / Edebiyat</option>
+                                <option value="LGS">LGS</option>
+                                <option value="Ders Kitabı">Okul Ders Kitabı</option>
+                                <option value="Kişisel Gelişim">Kişisel Gelişim</option>
+                                <option value="Bilim">Bilim / Araştırma</option>
+                                <option value="Tarih">Tarih</option>
+                                <option value="Diğer">Diğer</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 30px;">
+                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">Aciliyet Durumu</label>
+                            <div style="display: flex; gap: 15px;">
+                                <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                                    <input type="radio" name="urgency" value="Normal" checked> Normal
+                                </label>
+                                <label style="cursor: pointer; display: flex; align-items: center; gap: 5px; color: var(--accent);">
+                                    <input type="radio" name="urgency" value="Yüksek"> <i class="fas fa-fire"></i> Çok Acil
+                                </label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px;">
+                            <i class="fas fa-paper-plane"></i> Talebi Gönder
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUNUCU_ADRESI = ''; 
+
+        async function authFetch(url, options = {}) {
+            const userId = localStorage.getItem('userId');
+            if (!userId) { window.location.href = 'index.html'; throw new Error('Unauthorized'); }
+
+            const headers = {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${userId}`, 
+                ...options.headers
+            };
+            
+            const fullUrl = url.startsWith('http') ? url : SUNUCU_ADRESI + url;
+
+            try {
+                const response = await fetch(fullUrl, { ...options, headers });
+                if (response.status === 401) {
+                    localStorage.removeItem('userId');
+                    window.location.href = 'index.html'; 
+                }
+                return response;
+            } catch (error) { console.error('Hata:', error); throw error; }
+        }
+
+        document.getElementById('requestForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const submitBtn = e.target.querySelector('button');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Gönderiliyor...';
+
+            const data = {
+                title: document.getElementById('bookTitle').value,
+                author: document.getElementById('bookAuthor').value,
+                category: document.getElementById('bookCategory').value,
+                urgency: document.querySelector('input[name="urgency"]:checked').value
+            };
+
+            try {
+                const response = await authFetch('/api/new-request', {
+                    method: 'POST',
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Talebiniz başarıyla alındı! Kütüphaneye eklendiğinde haber vereceğiz.');
+                    window.location.href = 'home.html';
+                } else {
+                    alert('Hata: ' + result.message);
+                }
+            } catch (error) {
+                alert('Bir hata oluştu.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        });
+    </script>
+</body>
+</html>

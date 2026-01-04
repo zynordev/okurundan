@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kitap Ekle - OKURUNDAN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">OKURUNDAN</div>
+        <div class="nav-links">
+            <a href="home.html" class="nav-link"><i class="fas fa-search"></i> Keşfet</a>
+            <a href="add-book.html" class="nav-link active"><i class="fas fa-plus"></i> Kitap Ekle</a>
+            <a href="messages.html" class="nav-link"><i class="fas fa-envelope"></i> Mesajlar</a>
+            <button id="logoutBtn" class="nav-link" style="color: #e74c3c; background: none; border: none; cursor: pointer;">
+                <i class="fas fa-sign-out-alt"></i> Çıkış Yap
+            </button>
+        </div>
+    </nav>
+
+    <div class="container" style="max-width: 700px;">
+        <div class="card">
+            <div class="card-body">
+                <h2 style="margin-bottom: 25px; color: var(--primary); text-align: center;">Kütüphaneye Katkıda Bulun</h2>
+                
+                <form id="addBookForm">
+                    
+                    <!-- Resim Önizleme Alanı -->
+                    <div style="margin-bottom: 30px; text-align: center;">
+                        <label for="bookImage" style="cursor: pointer; display: inline-block;">
+                            <div id="imagePreview" style="width: 150px; height: 200px; background: #f0f2f5; border: 2px dashed #ccc; border-radius: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; overflow: hidden;">
+                                <i class="fas fa-camera fa-3x" style="color: #ccc; margin-bottom: 10px;"></i>
+                                <span style="color: #999;">Fotoğraf Ekle</span>
+                            </div>
+                        </label>
+                        <input type="file" id="bookImage" accept="image/*" style="display: none;">
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Kitap Adı <span style="color:red">*</span></label>
+                            <input type="text" id="bookTitle" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Yazar</label>
+                            <input type="text" id="bookAuthor" class="form-control">
+                        </div>
+                    </div>
+
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label class="form-label">Kategori <span style="color:red">*</span></label>
+                            <select id="bookCategory" class="form-control" required>
+                                <option value="">Seçiniz...</option>
+                                <option value="Roman">Roman / Edebiyat</option>
+                                <option value="TYT-AYT">TYT / AYT Hazırlık</option>
+                                <option value="Ders Kitabı">Okul Ders Kitabı</option>
+                                <option value="Bilim">Bilim / Araştırma</option>
+                                <option value="Diğer">Diğer</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Durum</label>
+                            <select id="bookCondition" class="form-control">
+                                <option value="Yeni Gibi">Yeni Gibi</option>
+                                <option value="İyi">İyi</option>
+                                <option value="Orta">Orta</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Açıklama</label>
+                        <textarea id="bookDescription" class="form-control" rows="3"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 15px;">Sisteme Ekle</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUNUCU_ADRESI = ''; 
+        let base64Image = null; // Resmi burada tutacağız
+
+        // 1. Resmi Metne Çevir (Base64)
+        document.getElementById('bookImage').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(evt) {
+                    base64Image = evt.target.result; // Resim verisi
+                    document.getElementById('imagePreview').innerHTML = `<img src="${base64Image}" style="width:100%; height:100%; object-fit:cover;">`;
+                }
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // 2. Formu Gönder
+        document.getElementById('addBookForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const submitBtn = e.target.querySelector('button');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Yükleniyor...';
+
+            const userId = localStorage.getItem('userId');
+            if (!userId) { window.location.href = 'index.html'; return; }
+
+            const data = {
+                title: document.getElementById('bookTitle').value,
+                author: document.getElementById('bookAuthor').value,
+                category: document.getElementById('bookCategory').value,
+                condition: document.getElementById('bookCondition').value,
+                description: document.getElementById('bookDescription').value,
+                image: base64Image // Resim verisini JSON içine koyuyoruz
+            };
+
+            try {
+                const response = await fetch(SUNUCU_ADRESI + '/api/add-book', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${userId}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Kitap başarıyla eklendi!');
+                    window.location.href = 'home.html';
+                } else {
+                    alert('Hata: ' + result.message);
+                }
+            } catch (error) {
+                alert('Sunucu hatası. ' + error.message);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Sisteme Ekle';
+            }
+        });
+    </script>
+</body>
+</html>

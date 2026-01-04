@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Giriş Yap - OKURUNDAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="display:flex; justify-content:center; align-items:center; height:100vh;">
+
+    <div class="card" style="width: 400px; padding: 40px; text-align: center;">
+        <div style="color: var(--primary); font-size: 3rem; margin-bottom: 10px;">
+            <i class="fas fa-book-reader"></i>
+        </div>
+        <h2 style="margin-bottom: 10px;">OKURUNDAN Giriş</h2>
+        <p style="color: #666; margin-bottom: 30px;">Okul e-posta adresiniz ile giriş yapın.<br>(Admin: <a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="49282d2420270926223c256722787b673d3b">[email&#160;protected]</a> / 123)</p>
+        
+        <form id="loginForm">
+            <input type="email" id="email" class="form-control" placeholder="E-posta Adresi" required>
+            <input type="password" id="password" class="form-control" placeholder="Şifre" required>
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Giriş Yap</button>
+        </form>
+
+        <p style="margin-top: 15px; font-size: 0.9rem;">Hesabınız yok mu? <a href="register.html" style="color: var(--primary); font-weight: 600;">Hemen Kayıt Ol</a></p>
+    </div>
+
+    <script>
+        const SUNUCU_ADRESI = ''; 
+        
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch(SUNUCU_ADRESI + '/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    // --- DÜZELTME BURADA ---
+                    // 1. Kullanıcı ID'sini kaydet
+                    localStorage.setItem('userId', result.userId);
+                    
+                    // 2. Kullanıcı Rolünü (Admin mi?) kaydet
+                    // Eğer sunucu role göndermediyse varsayılan 'student' olsun
+                    localStorage.setItem('userRole', result.role || 'student');
+                    
+                    console.log("Giriş Başarılı! Rol:", result.role); // Kontrol için log
+
+                    // Ana sayfaya git
+                    window.location.href = 'home.html';
+                } else {
+                    alert('Giriş başarısız: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Login hatası:', error);
+                alert('Sunucu hatası. Server çalışıyor mu?');
+            }
+        });
+    </script>
+</body>
+</html>

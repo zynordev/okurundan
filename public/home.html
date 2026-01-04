@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Ana Sayfa - OKURUNDAN</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- GÜVENLİK DUVARI: Giriş Yapılmamışsa Sayfayı Gösterme (En Başta Çalışır) -->
+    <script>
+        (function() {
+            const userId = localStorage.getItem('userId');
+            if (!userId) {
+                // Giriş kaydı yoksa direkt login sayfasına at
+                window.location.href = 'index.html';
+                // Kodun geri kalanını durdur
+                throw new Error("Giriş Yapılmadı. Yönlendiriliyor...");
+            }
+        })();
+    </script>
+
+    <style>
+        /* Kitapların daha küçük ve düzenli görünmesi için özel stil */
+        #booksGrid {
+            display: grid !important;
+            /* Kartlar en az 180px genişliğinde olacak, sığabildiği kadar yan yana dizecek */
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)) !important;
+            gap: 15px !important;
+        }
+
+        .book-card {
+            font-size: 0.9rem; /* Yazı boyutunu biraz küçült */
+        }
+
+        .book-card .card-body {
+            padding: 12px !important; /* İç boşluğu azalt */
+        }
+
+        .book-card h3 {
+            font-size: 1rem !important; /* Başlık boyutunu dengele */
+            line-height: 1.3;
+            height: 2.6em; /* Başlık için sabit yükseklik (2 satır) */
+            overflow: hidden;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar">
+        <a href="home.html" class="brand">OKURUNDAN</a>
+        <div class="nav-menu">
+            <!-- Normal Linkler -->
+            <a href="request-book.html" class="nav-link"><i class="fas fa-bullhorn"></i> Kitap İste</a>
+            <a href="add-book.html" class="nav-link"><i class="fas fa-plus-circle"></i> Kitap Ekle</a>
+            <a href="messages.html" class="nav-link"><i class="fas fa-envelope"></i> Mesajlar</a>
+            
+            <!-- GİZLİ ADMİN BUTONU (Varsayılan olarak display:none) -->
+            <a href="admin.html" id="adminBtn" class="nav-link" style="display: none; background-color: var(--accent); color: white; border-radius: 5px; padding: 5px 10px;">
+                <i class="fas fa-user-shield"></i> Yönetici Paneli
+            </a>
+
+            <a href="#" onclick="logout()" class="nav-link" style="color: #e74c3c;"><i class="fas fa-sign-out-alt"></i> Çıkış</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <h2 class="page-title">Paylaşımdaki Kitaplar</h2>
+        
+        <div id="booksGrid" class="grid-3">
+            <!-- Kitaplar buraya yüklenecek -->
+            <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #666;">
+                <i class="fas fa-spinner fa-spin fa-2x"></i><br><br>Kitaplar yükleniyor...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sayfa Yüklendiğinde
+        document.addEventListener('DOMContentLoaded', () => {
+            // checkAuth(); // Artık head kısmında yapılıyor, burası devre dışı
+            checkAdminRole(); // Admin kontrolü
+            fetchBooks();
+        });
+
+        // --- ADMİN BUTONUNU GÖSTERME MANTIĞI ---
+        function checkAdminRole() {
+            const role = localStorage.getItem('userRole'); // Login olurken bu veriyi kaydetmelisiniz!
+            if (role === 'admin') {
+                const adminBtn = document.getElementById('adminBtn');
+                if (adminBtn) {
+                    adminBtn.style.display = 'inline-flex';
+                }
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('userId');
+            localStorage.removeItem('userRole'); // Rolü de temizle
+            window.location.href = 'index.html';
+        }
+
+        async function fetchBooks() {
+            const userId = localStorage.getItem('userId');
+            // Eğer script atlatılırsa diye ekstra kontrol
+            if (!userId) return; 
+
+            try {
+                const response = await fetch('/api/books', {
+                    headers: { 'Authorization': `Bearer ${userId}` }
+                });
+                const books = await response.json();
+                
+                const grid = document.getElementById('booksGrid');
+                grid.innerHTML = '';
+
+                if (books.length === 0) {
+                    grid.innerHTML = '<div style="grid-column: 1/-1; text-align: center; padding: 40px;">Henüz hiç kitap eklenmemiş. İlk ekleyen sen ol!</div>';
+                    return;
+                }
+
+                books.forEach(book => {
+                    const card = document.createElement('div');
+                    card.className = 'card book-card';
+                    // Rastgele bir kitap kapağı ikonu seçelim
+                    const iconColor = ['#3498db', '#e74c3c', '#2ecc71', '#f1c40f'][Math.floor(Math.random()*4)];
+                    
+                    // Resim boyutunu küçülttük: height: 140px
+                    const imageHtml = book.image 
+                        ? `<img src="${book.image}" alt="${book.title}" style="width:100%; height: 140px; object-fit: cover;">`
+                        : `<div style="height: 140px; background: #f8f9fa; display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: ${iconColor};"><i class="fas fa-book"></i></div>`;
+
+                    card.innerHTML = `
+                        <div style="overflow: hidden;">${imageHtml}</div>
+                        <div class="card-body">
+                            <span class="chip" style="font-size: 0.75rem; padding: 2px 8px;">${book.category || 'Genel'}</span>
+                            <h3 style="margin: 8px 0;">${book.title}</h3>
+                            <p style="color: #666; font-size: 0.85rem; margin-bottom: 10px;">${book.author}</p>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <span style="font-size: 0.75rem; color: #27ae60;"><i class="fas fa-check-circle"></i> Müsait</span>
+                                <a href="book-detail.html?id=${book.id}" class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;">İncele</a>
+                            </div>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+            }
+        }
+    </script>
+</body>
+</html>

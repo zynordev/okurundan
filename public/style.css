@@ -1,0 +1,67 @@
+/* style.css - OKURUNDAN Genel Tasarım */
+:root {
+    --primary: #4A90E2; /* Teknoloji Mavisi */
+    --secondary: #2C3E50; /* Kurumsal Gri */
+    --accent: #E67E22; /* Hareket/Uyarı Rengi */
+    --success: #27ae60;
+    --bg-light: #f8f9fa;
+    --white: #ffffff;
+    --radius: 10px;
+    --shadow: 0 5px 15px rgba(0,0,0,0.08);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+body { background-color: var(--bg-light); color: var(--secondary); padding-bottom: 40px; }
+a { text-decoration: none; color: inherit; }
+
+/* Navbar */
+.navbar {
+    background: var(--white); padding: 1rem 10%; display: flex; justify-content: space-between; align-items: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100;
+}
+.brand { font-size: 1.5rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 10px; }
+.nav-menu { display: flex; gap: 20px; }
+.nav-link { padding: 8px 15px; border-radius: 20px; font-weight: 500; transition: 0.3s; }
+.nav-link:hover, .nav-link.active { background: var(--primary); color: white; }
+.nav-link.admin { color: var(--accent); border: 1px solid var(--accent); }
+.nav-link.admin:hover { background: var(--accent); color: white; }
+
+/* Layout & Grid */
+.container { max-width: 1100px; margin: 2rem auto; padding: 0 20px; }
+.grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 25px; }
+.flex-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+
+/* Buttons & Inputs */
+.btn { padding: 10px 20px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; transition: 0.2s; display: inline-block;}
+.btn-primary { background: var(--primary); color: white; }
+.btn-primary:hover { background: #357ABD; }
+.btn-danger { background: #e74c3c; color: white; }
+.form-control { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 15px; }
+
+/* Cards */
+.card { background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; transition: 0.3s; }
+.card:hover { transform: translateY(-5px); }
+.card-img { height: 180px; background: #e9ecef; display: flex; align-items: center; justify-content: center; color: #adb5bd; }
+.card-body { padding: 15px; }
+.badge { font-size: 0.75rem; padding: 4px 8px; border-radius: 4px; background: #e3f2fd; color: var(--primary); font-weight: bold; }
+.ai-match { background: var(--accent); color: white; position: absolute; top: 10px; right: 10px; padding: 5px 10px; border-radius: 15px; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+/* Chat / Messaging */
+.chat-container { display: flex; height: 500px; background: white; border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; }
+.chat-sidebar { width: 30%; border-right: 1px solid #eee; overflow-y: auto; }
+.chat-user { padding: 15px; border-bottom: 1px solid #f1f1f1; cursor: pointer; transition: 0.2s; }
+.chat-user:hover, .chat-user.active { background: #f8f9fa; }
+.chat-main { width: 70%; display: flex; flex-direction: column; }
+.chat-header { padding: 15px; border-bottom: 1px solid #eee; background: #fbfbfb; font-weight: 600; }
+.chat-messages { flex: 1; padding: 20px; overflow-y: auto; background: #fff; }
+.message { margin-bottom: 15px; max-width: 70%; padding: 10px 15px; border-radius: 10px; font-size: 0.9rem; }
+.msg-in { background: #f1f0f0; align-self: flex-start; border-bottom-left-radius: 0; }
+.msg-out { background: var(--primary); color: white; margin-left: auto; border-bottom-right-radius: 0; }
+.chat-input-area { padding: 15px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+
+/* Admin Dashboard Elements */
+.stat-card { background: white; padding: 20px; border-radius: var(--radius); box-shadow: var(--shadow); text-align: center; }
+.stat-num { font-size: 2.5rem; font-weight: 700; color: var(--primary); }
+.chart-box { background: white; padding: 20px; border-radius: var(--radius); margin-top: 20px; box-shadow: var(--shadow); height: 300px; display: flex; align-items: flex-end; justify-content: space-around; padding-bottom: 40px; }
+.chart-bar { width: 50px; background: var(--primary); border-radius: 5px 5px 0 0; position: relative; transition: height 1s ease; }
+.chart-bar span { position: absolute; bottom: -25px; left: 50%; transform: translateX(-50%); font-size: 0.8rem; width: 100px; text-align: center;}

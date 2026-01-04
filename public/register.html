@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>Kayıt Ol - OKURUNDAN</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="display:flex; justify-content:center; align-items:center; height:100vh;">
+
+    <div class="card" style="width: 400px; padding: 40px; text-align: center;">
+        <div style="color: var(--primary); font-size: 3rem; margin-bottom: 10px;">
+            <i class="fas fa-user-plus"></i>
+        </div>
+        <h2 style="margin-bottom: 10px;">Yeni Kayıt</h2>
+        <p style="color: #666; margin-bottom: 30px;">Lütfen okul e-posta adresinizi kullanın.</p>
+        
+        <form id="registerForm">
+            <input type="text" id="name" class="form-control" placeholder="Adınız Soyadınız" required>
+            <input type="email" id="email" class="form-control" placeholder="Okul E-posta Adresi" required>
+            <input type="password" id="password" class="form-control" placeholder="Şifre" required>
+            <select id="userClass" class="form-control" required>
+                <option value="" disabled selected>Sınıfınızı Seçin</option>
+                <option value="5">5. Sınıf</option>
+                <option value="6">6. Sınıf</option>
+                <option value="7">7. Sınıf</option>
+                <option value="8">8. Sınıf</option>
+            </select>
+            <button type="submit" class="btn btn-primary" style="margin-top: 20px;">Kayıt Ol</button>
+        </form>
+        <p class="mt-3">Zaten hesabın var mı? <a href="index.html">Giriş Yap</a></p>
+    </div>
+
+    <script>
+        // KRİTİK: BURAYI KENDİ BİLGİSAYARINIZIN IP ADRESİ VE PORTUYLA DEĞİŞTİRİN!
+        const SUNUCU_ADRESI = ''; 
+        
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value;
+            const userClass = document.getElementById('userClass').value;
+            
+            try {
+                const response = await fetch(SUNUCU_ADRESI + '/api/register', { 
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, name, userClass })
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Kayıt başarılı! Hoş geldiniz.');
+                    localStorage.setItem('userId', result.userId); // userId olarak düzeltildi
+                    window.location.href = 'home.html';
+                } else {
+                    alert('Hata: ' + result.message);
+                }
+            } catch (error) {
+                alert('Sunucu hatası. Server.js çalışıyor mu?');
+            }
+        });
+    </script>
+</body>
+</html>
