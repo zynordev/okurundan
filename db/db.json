@@ -1,0 +1,205 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "email": "admin@okul.k12.tr",
+      "password": "123",
+      "name": "İdare",
+      "role": "admin",
+      "class": "idare"
+    },
+    {
+      "id": 101,
+      "email": "ahmet@okul.k12.tr",
+      "password": "123",
+      "name": "Ahmet Y.",
+      "role": "student",
+      "class": "12A"
+    },
+    {
+      "id": 102,
+      "email": "ayse@okul.k12.tr",
+      "password": "123",
+      "name": "Ayşe K.",
+      "role": "student",
+      "class": "11B"
+    }
+  ],
+  "books": [
+    {
+      "id": 1001,
+      "ownerId": 103,
+      "title": "1984",
+      "author": "George Orwell",
+      "category": "Edebiyat",
+      "condition": "İyi",
+      "status": "Available",
+      "requests": 1
+    },
+    {
+      "id": 1002,
+      "ownerId": 103,
+      "title": "Denemeler",
+      "author": "Micheal De Montaigne",
+      "category": "Roman",
+      "condition": "İyi",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:22:22.088Z"
+    },
+    {
+      "id": 1003,
+      "ownerId": 103,
+      "title": "Sokrates'in Savunması",
+      "author": "Platon",
+      "category": "Roman",
+      "condition": "Orta",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:22:47.769Z"
+    },
+    {
+      "id": 1004,
+      "ownerId": 103,
+      "title": "AbumRabum",
+      "author": "İskender Pala",
+      "category": "Roman",
+      "condition": "İyi",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:23:28.719Z"
+    },
+    {
+      "id": 1005,
+      "ownerId": 103,
+      "title": "İnce Memed Cilt 2",
+      "author": "Yaşar Kemal",
+      "category": "Roman",
+      "condition": "İyi",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:23:50.369Z"
+    },
+    {
+      "id": 1006,
+      "ownerId": 103,
+      "title": "Matematik Soru Bankası ",
+      "author": "Bilinmiyor",
+      "category": "Ders Kitabı",
+      "condition": "Yeni Gibi",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:24:04.034Z"
+    },
+    {
+      "id": 1007,
+      "ownerId": 103,
+      "title": "Robin Hood",
+      "author": "Howard Pyle ",
+      "category": "Roman",
+      "condition": "Orta",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:24:35.749Z"
+    },
+    {
+      "id": 1008,
+      "ownerId": 103,
+      "title": "Hayvan Çiftliği",
+      "author": "George Orwell",
+      "category": "Roman",
+      "condition": "İyi",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:25:04.622Z"
+    },
+    {
+      "id": 1009,
+      "ownerId": 103,
+      "title": "Hz.Peygamberimiz'in Hayatı",
+      "author": "Bilinmiyor",
+      "category": "Bilim",
+      "condition": "Yeni Gibi",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:25:55.052Z"
+    },
+    {
+      "id": 1010,
+      "ownerId": 103,
+      "title": "Elif-Ba",
+      "author": "Bilinmiyor",
+      "category": "Bilim",
+      "condition": "Yeni Gibi",
+      "image": null,
+      "status": "Available",
+      "requests": 0,
+      "createdAt": "2026-01-01T18:26:53.080Z"
+    }
+  ],
+  "transactions": [
+    {
+      "id": 1,
+      "bookId": 1001,
+      "requesterId": 104,
+      "ownerId": 103,
+      "status": "Pending",
+      "chatName": "Anonim Sohbet #1"
+    }
+  ],
+  "messages": [
+    {
+      "id": 1,
+      "transactionId": 1,
+      "senderId": 104,
+      "text": "Merhaba, paylaştığınız \"1984\" kitabını talep etmek istiyorum.",
+      "timestamp": 1765657840778
+    },
+    {
+      "id": 2,
+      "transactionId": 1,
+      "senderId": 104,
+      "text": "selam yarın gelir misin",
+      "timestamp": 1765657848142
+    },
+    {
+      "id": 3,
+      "transactionId": 1,
+      "senderId": 103,
+      "text": "evet gelirim",
+      "timestamp": 1765657857008
+    }
+  ],
+  "general_requests": [
+    {
+      "id": 1,
+      "requesterId": 103,
+      "requesterName": "Mehmet",
+      "title": "Sefiller",
+      "author": "Victor Hugo",
+      "category": "Roman",
+      "urgency": "Normal",
+      "status": "Beklemede",
+      "createdAt": "2026-01-01T18:29:14.808Z"
+    },
+    {
+      "id": 2,
+      "requesterId": 103,
+      "requesterName": "Mehmet",
+      "title": "Türkçe Paragraf 8.sınıf Soru bankası",
+      "author": "Bilinmiyor",
+      "category": "LGS",
+      "urgency": "Yüksek",
+      "status": "Beklemede",
+      "createdAt": "2026-01-01T18:30:32.417Z"
+    }
+  ]
+}
