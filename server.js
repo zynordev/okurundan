@@ -230,21 +230,25 @@ app.post('/api/request-book', (req, res) => {
     const user = authenticate(req);
     if (!user) return res.status(401).json({ success: false, message: 'Yetkisiz erişim.' });
 
-    const { bookId, ownerId, initialMessage } = req.body;
-    
+    const { bookId, initialMessage } = req.body;
+
     // Eksik bilgi kontrolü
-    if (!bookId || !ownerId || !initialMessage) {
-        console.log('HATA: bookId, ownerId ve mesaj şart.');
+    if (!bookId || !initialMessage) {
+        console.log('HATA: bookId ve mesaj şart.');
         return res.status(400).json({ success: false, message: 'İlan talebi için eksik bilgi.' });
     }
 
     const requesterId = user.id;
     const bookIdNum = parseInt(bookId);
-    const ownerIdNum = parseInt(ownerId);
 
     const book = data.books.find(b => b.id === bookIdNum);
-    
+
     if (!book) return res.status(404).json({ success: false, message: 'Kitap bulunamadı.' });
+
+    // Sahip bilgisi istemciden DEĞİL, kitabın kendi kaydından alınır. Aksi halde
+    // istemci istediği ownerId'yi göndererek sohbeti kitabın gerçek sahibi yerine
+    // üçüncü bir kişiyle açtırabiliyor, gerçek sahip talepten hiç haberdar olmuyordu.
+    const ownerIdNum = book.ownerId;
     if (requesterId === ownerIdNum) return res.status(400).json({ success: false, message: 'Kendi kitabınızı isteyemezsiniz.' });
 
     // Zaten talep var mı?
@@ -374,8 +378,12 @@ app.post('/api/send-message', (req, res) => {
 // =========================================================
 app.get('/api/admin/dashboard', (req, res) => {
     const user = authenticate(req);
-    // Güvenlik: Normalde burada role === 'admin' kontrolü yapılır
     if (!user) return res.status(401).json({ success: false, message: 'Yetkisiz.' });
+    // Bu uç tüm okulun taleplerini, öğrenci adlarını ve sınıf istatistiklerini
+    // döndürüyor; sadece giriş yapmış olmak yeterli değil, rol de kontrol edilmeli.
+    if (user.role !== 'admin') {
+        return res.status(403).json({ success: false, message: 'Bu alana erişim yetkiniz yok.' });
+    }
 
     const reqs = data.general_requests || [];
     
