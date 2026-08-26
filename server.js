@@ -22,16 +22,21 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // HTML Sayfa Yönlendirmeleri
-app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-app.get('/index.html', (req, res) => { res.sendFile(path.join(__dirname, 'index.html')); });
-app.get('/home.html', (req, res) => { res.sendFile(path.join(__dirname, 'home.html')); });
-app.get('/book-detail.html', (req, res) => { res.sendFile(path.join(__dirname, 'book-detail.html')); });
-app.get('/messages.html', (req, res) => { res.sendFile(path.join(__dirname, 'messages.html')); });
-app.get('/chat-detail.html', (req, res) => { res.sendFile(path.join(__dirname, 'chat-detail.html')); });
-app.get('/add-book.html', (req, res) => { res.sendFile(path.join(__dirname, 'add-book.html')); });
-app.get('/request-book.html', (req, res) => { res.sendFile(path.join(__dirname, 'request-book.html')); });
-app.get('/admin.html', (req, res) => { res.sendFile(path.join(__dirname, 'admin.html')); });
-app.get('/style.css', (req, res) => { res.sendFile(path.join(__dirname, 'style.css')); });
+// Not: dosyalar public/ altında, __dirname'in kendisinde değil. Yol "public"
+// içermediği için bu route'lar aslında ENOENT verir; şu an fark edilmiyor
+// çünkü yukarıdaki express.static hepsini zaten karşılıyor ve buraya hiç
+// gelinmiyor. Static katmanı kaldırılsa/sıralaması değişse tüm sayfalar
+// kırılırdı.
+app.get('/', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'index.html')); });
+app.get('/index.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'index.html')); });
+app.get('/home.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'home.html')); });
+app.get('/book-detail.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'book-detail.html')); });
+app.get('/messages.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'messages.html')); });
+app.get('/chat-detail.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'chat-detail.html')); });
+app.get('/add-book.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'add-book.html')); });
+app.get('/request-book.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'request-book.html')); });
+app.get('/admin.html', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'admin.html')); });
+app.get('/style.css', (req, res) => { res.sendFile(path.join(__dirname, 'public', 'style.css')); });
 
 // =========================================================
 // 2. VERİ YÖNETİMİ
