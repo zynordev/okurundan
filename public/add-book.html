@@ -83,8 +83,25 @@
     </div>
 
     <script>
-        const SUNUCU_ADRESI = ''; 
+        const SUNUCU_ADRESI = '';
         let base64Image = null; // Resmi burada tutacağız
+
+        // 0. Çıkış Yap (messages.html / book-detail.html ile aynı davranış)
+        async function handleLogout() {
+            try {
+                const userId = localStorage.getItem('userId');
+                await fetch('/api/logout', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${userId}` }
+                });
+            } catch (err) {
+                // Sunucuya ulaşılamasa da yerel oturum temizlenmeli
+            } finally {
+                localStorage.removeItem('userId');
+                window.location.href = 'index.html';
+            }
+        }
+        document.getElementById('logoutBtn').addEventListener('click', handleLogout);
 
         // 1. Resmi Metne Çevir (Base64)
         document.getElementById('bookImage').addEventListener('change', function(e) {
